@@ -55,14 +55,20 @@ class WechatChannel(Channel):
         itchat.instance.receivingRetryCount = 600 # 修改断线超时时间
         # login by scan QRCode
         hotReload = conf().get('hot_reload', False)
+
+        def login_callback():
+            qr_uuid = itchat.get_QRuuid()
+            qr_code_url = f'https://wechaty.js.org/qrcode/https%3A%2F%2Flogin.weixin.qq.com%2Fl%2F{qr_uuid}%3D%3D'
+            print(f'[WX] 二维码URL: {qr_code_url}')
+            
         try:
-            itchat.auto_login(enableCmdQR=0.2, hotReload=hotReload)
+            itchat.auto_login(enableCmdQR=2, hotReload=hotReload,loginCallback=login_callback)
         except Exception as e:
             if hotReload:
                 logger.error("Hot reload failed, try to login without hot reload")
                 itchat.logout()
                 os.remove("itchat.pkl")
-                itchat.auto_login(enableCmdQR=0.2, hotReload=hotReload)
+                itchat.auto_login(enableCmdQR=2, hotReload=hotReload,loginCallback=login_callback)
             else:
                 raise e
         # start message listener

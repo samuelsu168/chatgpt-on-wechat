@@ -24,6 +24,7 @@ available_setting ={
     "group_name_keyword_white_list": [], # 开启自动回复的群名称关键词列表
     "group_chat_in_one_session": ["ChatGPT测试群"], # 支持会话上下文共享的群名称
     "image_create_prefix": ["画", "看", "找"], # 开启图片回复的前缀
+    "image_size": "512x512",  # 设置图片大小
     
     #chatgpt会话参数
     "expires_in_seconds": 3600, # 无操作会话的过期时间

@@ -90,7 +90,7 @@ class Role(Plugin):
             e_context.action = EventAction.BREAK_PASS
             return
         elif clist[0] == "$角色":
-            desckey = "descn"
+            desckey = "description"
         elif clist[0].lower() == "$role":
             desckey = "description"
         elif sessionid not in self.roleplays:

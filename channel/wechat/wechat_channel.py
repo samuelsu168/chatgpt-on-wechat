@@ -56,7 +56,7 @@ class WechatChannel(Channel):
         # login by scan QRCode
         hotReload = conf().get('hot_reload', False)
         try:
-            itchat.auto_login(enableCmdQR=1, hotReload=hotReload)
+            itchat.auto_login(enableCmdQR=0.5, hotReload=hotReload)
         except Exception as e:
             if hotReload:
                 logger.error("Hot reload failed, try to login without hot reload")

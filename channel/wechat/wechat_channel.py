@@ -62,7 +62,7 @@ class WechatChannel(Channel):
                 logger.error("Hot reload failed, try to login without hot reload")
                 itchat.logout()
                 os.remove("itchat.pkl")
-                itchat.auto_login(enableCmdQR=1, hotReload=hotReload)
+                itchat.auto_login(enableCmdQR=0.5, hotReload=hotReload)
             else:
                 raise e
         # start message listener

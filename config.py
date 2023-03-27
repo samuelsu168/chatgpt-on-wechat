@@ -4,7 +4,7 @@ import json
 import os
 from common.log import logger
 
-# 将所有可用的配置项写在字典里
+# 将所有可用的配置项写在字典里, 请使用小写字母
 available_setting ={
     #openai api配置
     "open_ai_api_key": "", # openai api key
@@ -44,6 +44,7 @@ available_setting ={
 
     #语音设置
     "speech_recognition": False, # 是否开启语音识别
+    "group_speech_recognition": False, # 是否开启群组语音识别
     "voice_reply_voice": False, # 是否使用语音回复语音，需要设置对应语音合成引擎的api key
     "voice_to_text": "openai", # 语音识别引擎，支持openai和google
     "text_to_voice": "baidu", # 语音合成引擎，支持baidu和google
@@ -99,15 +100,21 @@ def load_config():
         config_path = "./config-template.json"
 
     config_str = read_file(config_path)
+    logger.debug("[INIT] config str: {}".format(config_str))
+
     # 将json字符串反序列化为dict类型
     config = Config(json.loads(config_str))
 
     # override config with environment variables.
     # Some online deployment platforms (e.g. Railway) deploy project from github directly. So you shouldn't put your secrets like api key in a config file, instead use environment variables to override the default config.
     for name, value in os.environ.items():
+        name = name.lower()
         if name in available_setting:
             logger.info("[INIT] override config by environ args: {}={}".format(name, value))
-            config[name] = value
+            try:
+                config[name] = eval(value)
+            except:
+                config[name] = value
 
     logger.info("[INIT] load config: {}".format(config))
 

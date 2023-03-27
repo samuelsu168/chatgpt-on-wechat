@@ -17,6 +17,7 @@
   "image_create_prefix": ["画", "看", "找"],
   "image_size": "512x512",
   "speech_recognition": false,
+  "group_speech_recognition": false,
   "voice_reply_voice": false,
   "conversation_max_tokens": 1000,
   "expires_in_seconds": 3600,

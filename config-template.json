@@ -14,12 +14,12 @@
   "group_chat_prefix": ["@七月chat","bot"],
   "group_name_white_list": ["区块链挖币", "快乐家族"],
   "group_chat_in_one_session": ["区块链挖币", "快乐家族"],
-  "image_create_prefix": ["画", "看", "找"],
+  "image_create_prefix": ["画", "看"],
   "image_size": "512x512",
   "speech_recognition": false,
   "group_speech_recognition": false,
   "voice_reply_voice": false,
-  "conversation_max_tokens": 1000,
+  "conversation_max_tokens": 4000,
   "expires_in_seconds": 3600,
   "character_desc": "你是ChatGPT, 一个由OpenAI训练的大型语言模型, 你旨在回答并解决人们的任何问题，并且可以使用多种语言与人交流。"
 }

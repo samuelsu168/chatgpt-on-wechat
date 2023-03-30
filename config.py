@@ -42,12 +42,12 @@ available_setting ={
     "frequency_penalty": 0,
     "presence_penalty": 0,
 
-    #语音设置
-    "speech_recognition": False, # 是否开启语音识别
-    "group_speech_recognition": False, # 是否开启群组语音识别
-    "voice_reply_voice": False, # 是否使用语音回复语音，需要设置对应语音合成引擎的api key
-    "voice_to_text": "openai", # 语音识别引擎，支持openai和google
-    "text_to_voice": "baidu", # 语音合成引擎，支持baidu和google
+    # 语音设置
+    "speech_recognition": False,  # 是否开启语音识别
+    "group_speech_recognition": False,  # 是否开启群组语音识别
+    "voice_reply_voice": False,  # 是否使用语音回复语音，需要设置对应语音合成引擎的api key
+    "voice_to_text": "openai",  # 语音识别引擎，支持openai,google
+    "text_to_voice": "baidu",  # 语音合成引擎，支持baidu,google,pytts(offline)
 
 
     # 微软语音
@@ -57,26 +57,32 @@ available_setting ={
     
     
     # baidu api的配置， 使用百度语音识别和语音合成时需要
-    'baidu_app_id': "",
-    'baidu_api_key': "",
-    'baidu_secret_key': "",
+    "baidu_app_id": "",
+    "baidu_api_key": "",
+    "baidu_secret_key": "",
+    # 1536普通话(支持简单的英文识别) 1737英语 1637粤语 1837四川话 1936普通话远场
+    "baidu_dev_pid": "1536",
 
-    #服务时间限制，目前支持itchat
-    "chat_time_module": False, # 是否开启服务时间限制
-    "chat_start_time": "00:00", # 服务开始时间
-    "chat_stop_time": "24:00", # 服务结束时间
+    # 服务时间限制，目前支持itchat
+    "chat_time_module": False,  # 是否开启服务时间限制
+    "chat_start_time": "00:00",  # 服务开始时间
+    "chat_stop_time": "24:00",  # 服务结束时间
 
     # itchat的配置
-    "hot_reload": False, # 是否开启热重载
+    "hot_reload": False,  # 是否开启热重载
 
     # wechaty的配置
-    "wechaty_puppet_service_token": "", # wechaty的token
+    "wechaty_puppet_service_token": "",  # wechaty的token
 
     # chatgpt指令自定义触发词
-    "clear_memory_commands": ['#清除记忆'], # 重置会话指令
+    "clear_memory_commands": ['#清除记忆'],  # 重置会话指令
+
+    # channel配置
+    "channel_type": "wx", # 通道类型，支持wx,wxy和terminal
 
 
 }
+
 
 class Config(dict):
     def __getitem__(self, key):
@@ -90,14 +96,16 @@ class Config(dict):
         return super().__setitem__(key, value)
 
     def get(self, key, default=None):
-        try :
+        try:
             return self[key]
         except KeyError as e:
             return default
         except Exception as e:
             raise e
-    
+
+
 config = Config()
+
 
 def load_config():
     global config
@@ -117,7 +125,8 @@ def load_config():
     for name, value in os.environ.items():
         name = name.lower()
         if name in available_setting:
-            logger.info("[INIT] override config by environ args: {}={}".format(name, value))
+            logger.info(
+                "[INIT] override config by environ args: {}={}".format(name, value))
             try:
                 config[name] = eval(value)
             except:
@@ -126,9 +135,8 @@ def load_config():
     logger.info("[INIT] load config: {}".format(config))
 
 
-
 def get_root():
-    return os.path.dirname(os.path.abspath( __file__ ))
+    return os.path.dirname(os.path.abspath(__file__))
 
 
 def read_file(path):

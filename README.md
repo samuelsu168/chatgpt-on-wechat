@@ -2,7 +2,7 @@
 
 > ChatGPT近期以强大的对话和信息整合能力风靡全网，可以写代码、改论文、讲故事，几乎无所不能，这让人不禁有个大胆的想法，能否用他的对话模型把我们的微信打造成一个智能机器人，可以在与好友对话中给出意想不到的回应，而且再也不用担心女朋友影响我们 ~~打游戏~~ 工作了。
 
- 
+
 基于ChatGPT的微信聊天机器人，通过 [ChatGPT](https://github.com/openai/openai-python) 接口生成对话内容，使用 [itchat](https://github.com/littlecodersh/ItChat) 实现微信消息的接收和自动回复。已实现的特性如下：
 
 - [x] **文本对话：** 接收私聊及群组中的微信消息，使用ChatGPT生成回复内容，完成自动回复
@@ -11,7 +11,11 @@
 - [x] **图片生成：** 支持根据描述生成图片，并自动发送至个人聊天或群聊
 - [x] **上下文记忆**：支持多轮对话记忆，且为每个好友维护独立的上下会话
 - [x] **语音识别：** 支持接收和处理语音消息，通过文字或语音回复
+- [x] **插件化：** 支持个性化功能插件，提供角色扮演、文字冒险游戏等预设插件
 
+> 快速部署:
+>
+>[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/qApznZ?referralCode=RC3znh)
 
 # 更新日志
 
@@ -60,7 +64,7 @@
 
 ### 2.运行环境
 
-支持 Linux、MacOS、Windows 系统（可在Linux服务器上长期运行)，同时需安装 `Python`。 
+支持 Linux、MacOS、Windows 系统（可在Linux服务器上长期运行)，同时需安装 `Python`。
 > 建议Python版本在 3.7.1~3.9.X 之间，3.10及以上版本在 MacOS 可用，其他系统上不确定能否正常运行。
 
 **(1) 克隆项目代码：**
@@ -73,20 +77,18 @@ cd chatgpt-on-wechat/
 **(2) 安装核心依赖 (必选)：**
 
 ```bash
-pip3 install itchat-uos==1.5.0.dev0
-pip3 install --upgrade openai
+pip3 install -r requirements.txt
 ```
-注：`itchat-uos`使用指定版本1.5.0.dev0，`openai`使用最新版本，需高于0.27.0。
+
+其中`tiktoken`要求`python`版本在3.8以上，它用于精确计算会话使用的tokens数量，可以不装但建议安装。
 
 **(3) 拓展依赖 (可选)：**
 
-语音识别及语音回复相关依赖：[#415](https://github.com/zhayujie/chatgpt-on-wechat/issues/415)。
+使用`google`或`baidu`语音识别需安装`ffmpeg`，
 
-让会话token数量的计算更加精准:
+默认的`openai`语音识别不需要安装`ffmpeg`。
 
-```bash
-pip3 install --upgrade tiktoken
-```
+参考[#415](https://github.com/zhayujie/chatgpt-on-wechat/issues/415)
 
 ## 配置
 
@@ -112,7 +114,7 @@ pip3 install --upgrade tiktoken
   "image_create_prefix": ["画", "看", "找"],                   # 开启图片回复的前缀
   "conversation_max_tokens": 1000,                            # 支持上下文记忆的最多字符数
   "speech_recognition": false,                                # 是否开启语音识别
-  "group_speech_recognition": false,                          # 是否开启群组语音识别 （目前仅支持wechaty）
+  "group_speech_recognition": false,                          # 是否开启群组语音识别
   "use_azure_chatgpt": false,                                 # 是否使用Azure ChatGPT service代替openai ChatGPT service. 当设置为true时需要设置 open_ai_api_base，如 https://xxx.openai.azure.com/
   "character_desc": "你是ChatGPT, 一个由OpenAI训练的大型语言模型, 你旨在回答并解决人们的任何问题，并且可以使用多种语言与人交流。",  # 人格描述,
 }
@@ -133,8 +135,8 @@ pip3 install --upgrade tiktoken
 
 **3.语音识别**
 
-+ 添加 `"speech_recognition": true` 将开启语音识别，默认使用openai的whisper模型识别为文字，同时以文字回复，该参数仅支持私聊 (注意由于语音消息无法匹配前缀，一旦开启将对所有语音自动回复)；
-+ 添加 `"group_speech_recognition": true` 将开启群组语音识别，默认使用openai的whisper模型识别为文字，同时以文字回复，参数仅支持群聊 (可以匹配group_chat_prefix和group_chat_keyword，目前仅支持wechaty方案)；
++ 添加 `"speech_recognition": true` 将开启语音识别，默认使用openai的whisper模型识别为文字，同时以文字回复，该参数仅支持私聊 (注意由于语音消息无法匹配前缀，一旦开启将对所有语音自动回复，支持语音触发画图)；
++ 添加 `"group_speech_recognition": true` 将开启群组语音识别，默认使用openai的whisper模型识别为文字，同时以文字回复，参数仅支持群聊 (会匹配group_chat_prefix和group_chat_keyword, 支持语音触发画图)；
 + 添加 `"voice_reply_voice": true` 将开启语音回复语音（同时作用于私聊和群聊），但是需要配置对应语音合成平台的key，由于itchat协议的限制，只能发送语音mp3文件，若使用wechaty则回复的是微信语音。
 
 **4.其他配置**
@@ -150,6 +152,7 @@ pip3 install --upgrade tiktoken
 + `hot_reload`: 程序退出后，暂存微信扫码状态，默认关闭。
 + `character_desc` 配置中保存着你对机器人说的一段话，他会记住这段话并作为他的设定，你可以为他定制任何人格      (关于会话上下文的更多内容参考该 [issue](https://github.com/zhayujie/chatgpt-on-wechat/issues/43))
 
+**所有可选的配置项均在该[文件](https://github.com/zhayujie/chatgpt-on-wechat/blob/master/config.py)中列出。**
 
 ## 运行
 
@@ -184,14 +187,11 @@ nohup python3 app.py & tail -f nohup.out          # 在后台运行程序并通�
 
 参考文档 [Docker部署](https://github.com/limccn/chatgpt-on-wechat/wiki/Docker%E9%83%A8%E7%BD%B2)   (Contributed by [limccn](https://github.com/limccn))。
 
-### 4. Railway部署
-[Use with Railway](#use-with-railway)(PaaS, Free, Stable, ✅Recommended)
-> Railway offers $5 (500 hours) of runtime per month
-1. Click the [Railway](https://railway.app/) button to go to the Railway homepage
-2. Click the `Start New Project` button.
-3. Click the `Deploy from Github repo` button.
-4. Choose your repo (you can fork this repo firstly)
-5. Set environment variable to override settings in config-template.json, such as: model, open_ai_api_base, open_ai_api_key, use_azure_chatgpt etc.
+### 4. Railway部署(✅推荐)
+> Railway每月提供5刀和最多500小时的免费额度。
+1. 进入 [Railway](https://railway.app/template/qApznZ?referralCode=RC3znh)。
+2. 点击 `Deploy Now` 按钮。
+3. 设置环境变量来重载程序运行的参数，例如`open_ai_api_key`, `character_desc`。
 
 ## 常见问题
 

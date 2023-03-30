@@ -16,10 +16,15 @@
   "group_chat_in_one_session": ["区块链挖币", "快乐家族","揭西群"],
   "image_create_prefix": ["画", "看"],
   "image_size": "512x512",
-  "speech_recognition": false,
+  "speech_recognition": true,
+  "voice_to_text": "openai",
   "group_speech_recognition": false,
-  "voice_reply_voice": false,
+  "voice_reply_voice": true,
   "conversation_max_tokens": 4000,
   "expires_in_seconds": 3600,
+  "text_to_voice": "azure",
+  "azure_speech_key": "",
+  "azure_service_region": "eastus",
+  "azure_voice_name": "zh-CN-XiaoshuangNeural",
   "character_desc": "你是ChatGPT, 一个由OpenAI训练的大型语言模型, 你旨在回答并解决人们的任何问题，并且可以使用多种语言与人交流。"
 }

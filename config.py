@@ -49,6 +49,13 @@ available_setting ={
     "voice_to_text": "openai", # 语音识别引擎，支持openai和google
     "text_to_voice": "baidu", # 语音合成引擎，支持baidu和google
 
+
+    # 微软语音
+    "azure_speech_key": "",
+    "azure_service_region": "",
+    "azure_voice_name": "zh-CN-XiaoshuangNeural",
+    
+    
     # baidu api的配置， 使用百度语音识别和语音合成时需要
     'baidu_app_id': "",
     'baidu_api_key': "",

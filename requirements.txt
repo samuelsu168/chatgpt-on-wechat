@@ -1,6 +1,4 @@
 itchat-uos==1.5.0.dev0
-openai
-wechaty
 azure-cognitiveservices-speech
 openai>=0.27.2
 baidu_aip>=4.16.10
@@ -16,5 +14,4 @@ webuiapi>=0.6.2
 wechaty>=0.10.7
 wechaty_puppet>=0.4.23
 chardet>=5.1.0
-SpeechRecognition
 tiktoken>=0.3.2

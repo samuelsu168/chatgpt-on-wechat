@@ -1,35 +1,70 @@
+
 """
 azure voice service
 """
+import json
+import os
 import time
 import azure.cognitiveservices.speech as speechsdk
+from aip import AipSpeech
 from bridge.reply import Reply, ReplyType
 from common.log import logger
 from common.tmp_dir import TmpDir
 from voice.voice import Voice
+from voice.audio_convert import get_pcm_from_wav
 from config import conf
+"""
+Azure voice
+主目录设置文件中需填写azure_voice_api_key和azure_voice_region
+
+查看可用的 voice： https://speech.microsoft.com/portal/voicegallery
+
+"""
 
 class AzureVoice(Voice):
-    speech_config = speechsdk.SpeechConfig(subscription=conf().get('azure_speech_key'), region=conf().get('azure_service_region'))
-    audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
-    speech_config.speech_synthesis_voice_name=conf().get('azure_voice_name')
-    speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)    
-    
+
     def __init__(self):
-        pass
+        try:
+            curdir = os.path.dirname(__file__)
+            config_path = os.path.join(curdir, "config.json")
+            config = None
+            if not os.path.exists(config_path): #如果没有配置文件，创建本地配置文件
+                config = { "speech_synthesis_voice_name": conf().get('azure_voice_name'), "speech_recognition_language": "zh-CN"}
+                with open(config_path, "w") as fw:
+                    json.dump(config, fw, indent=4)
+            else:
+                with open(config_path, "r") as fr:
+                    config = json.load(fr)
+            self.api_key = conf().get('azure_voice_api_key')
+            self.api_region = conf().get('azure_voice_region')
+            self.speech_config = speechsdk.SpeechConfig(subscription=self.api_key, region=self.api_region)
+            self.speech_config.speech_synthesis_voice_name = config["speech_synthesis_voice_name"]
+            self.speech_config.speech_recognition_language = config["speech_recognition_language"]
+        except Exception as e:
+            logger.warn("AzureVoice init failed: %s, ignore " % e)
 
     def voiceToText(self, voice_file):
-        pass
+        audio_config = speechsdk.AudioConfig(filename=voice_file)
+        speech_recognizer = speechsdk.SpeechRecognizer(speech_config=self.speech_config, audio_config=audio_config)
+        result = speech_recognizer.recognize_once()
+        if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+            logger.info('[Azure] voiceToText voice file name={} text={}'.format(voice_file, result.text))
+            reply = Reply(ReplyType.TEXT, result.text)
+        else:
+            logger.error('[Azure] voiceToText error, result={}'.format(result))
+            reply = Reply(ReplyType.ERROR, "抱歉，语音识别失败")
+        return reply
 
     def textToVoice(self, text):
-        result = self.speech_synthesizer.speak_text_async(text).get()
-        if not isinstance(result, dict):
-            fileName = TmpDir().path() + 'voice_response_' + str(int(time.time())) + '.mp3'
-            with open(fileName, 'wb') as f:
-                f.write(result.audio_data)
-            logger.info('[Azure] textToVoice text={} voice file name={}'.format(text, fileName))
+        fileName = TmpDir().path() + '语音回复_' + str(int(time.time())) + '.wav'
+        audio_config = speechsdk.AudioConfig(filename=fileName)
+        speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=self.speech_config, audio_config=audio_config)
+        result = speech_synthesizer.speak_text(text)
+        if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+            logger.info(
+                '[Azure] textToVoice text={} voice file name={}'.format(text, fileName))
             reply = Reply(ReplyType.VOICE, fileName)
         else:
-            logger.error('[Azure] textToVoice error={}'.format(result))
+            logger.error('[Azure] textToVoice error, result={}'.format(result))
             reply = Reply(ReplyType.ERROR, "抱歉，语音合成失败")
         return reply

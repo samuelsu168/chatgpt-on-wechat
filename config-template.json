@@ -17,7 +17,7 @@
   "image_create_prefix": ["画", "看"],
   "image_size": "512x512",
   "speech_recognition": true,
-  "voice_to_text": "openai",
+  "voice_to_text": "azure",
   "group_speech_recognition": false,
   "voice_reply_voice": true,
   "conversation_max_tokens": 4000,

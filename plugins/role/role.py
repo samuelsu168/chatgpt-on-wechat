@@ -6,6 +6,7 @@ from bridge.bridge import Bridge
 from bridge.context import ContextType
 from bridge.reply import Reply, ReplyType
 from common import const
+from config import conf
 import plugins
 from plugins import *
 from common.log import logger
@@ -29,7 +30,7 @@ class RolePlay():
         prompt = self.wrapper % user_action
         return prompt
 
-@plugins.register(name="Role", desc="为你的Bot设置预设角色", version="1.0", author="lanvent", desire_priority= 0)
+@plugins.register(name="Role", desire_priority=0, namecn="角色扮演", desc="为你的Bot设置预设角色", version="1.0", author="lanvent")
 class Role(Plugin):
     def __init__(self):
         super().__init__()
@@ -44,10 +45,12 @@ class Role(Plugin):
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
             self.roleplays = {}
             logger.info("[Role] inited")
-        except FileNotFoundError:
-            logger.warn(f"[Role] init failed, {config_path} not found, ignore or see https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins/role .")
         except Exception as e:
-            logger.warn("[Role] init failed, exception: %s, ignore or see https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins/role ." % e)
+            if isinstance(e, FileNotFoundError):
+                logger.warn(f"[Role] init failed, {config_path} not found, ignore or see https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins/role .")
+            else:
+                logger.warn("[Role] init failed, ignore or see https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins/role .")
+            raise e
 
     def get_role(self, name, find_closest=True):
         name = name.lower()
@@ -80,8 +83,10 @@ class Role(Plugin):
         content = e_context['context'].content[:]
         clist = e_context['context'].content.split(maxsplit=1)
         desckey = None
+        customize = False
         sessionid = e_context['context']['session_id']
-        if clist[0] == "$停止扮演":
+        trigger_prefix = conf().get('plugin_trigger_prefix', "$")
+        if clist[0] == f"{trigger_prefix}停止扮演":
             if sessionid in self.roleplays:
                 self.roleplays[sessionid].reset()
                 del self.roleplays[sessionid]
@@ -89,16 +94,18 @@ class Role(Plugin):
             e_context['reply'] = reply
             e_context.action = EventAction.BREAK_PASS
             return
-        elif clist[0] == "$角色":
+        elif clist[0] == f"{trigger_prefix}角色":
             desckey = "description"
-        elif clist[0].lower() == "$role":
+        elif clist[0].lower() == f"{trigger_prefix}role":
             desckey = "description"
+        elif clist[0] == f"{trigger_prefix}设定扮演":
+            customize = True
         elif sessionid not in self.roleplays:
             return
         logger.debug("[Role] on_handle_context. content: %s" % content)
         if desckey is not None:
             if len(clist) == 1 or (len(clist) > 1 and clist[1].lower() in ["help", "帮助"]):
-                reply = Reply(ReplyType.INFO, self.get_help_text())
+                reply = Reply(ReplyType.INFO, self.get_help_text(verbose=True))
                 e_context['reply'] = reply
                 e_context.action = EventAction.BREAK_PASS
                 return
@@ -110,17 +117,30 @@ class Role(Plugin):
                 return
             else:
                 self.roleplays[sessionid] = RolePlay(bot, sessionid, self.roles[role][desckey], self.roles[role].get("wrapper","%s"))
-                reply = Reply(ReplyType.INFO, f"角色设定为 {role} :\n"+self.roles[role][desckey])
+                reply = Reply(ReplyType.INFO, f"预设角色为 {role}:\n"+self.roles[role][desckey])
                 e_context['reply'] = reply
                 e_context.action = EventAction.BREAK_PASS
+        elif customize == True:
+            self.roleplays[sessionid] = RolePlay(bot, sessionid, clist[1], "%s")
+            reply = Reply(ReplyType.INFO, f"角色设定为:\n{clist[1]}")
+            e_context['reply'] = reply
+            e_context.action = EventAction.BREAK_PASS
         else:
             prompt = self.roleplays[sessionid].action(content)
             e_context['context'].type = ContextType.TEXT
             e_context['context'].content = prompt
             e_context.action = EventAction.BREAK
 
-    def get_help_text(self, **kwargs):
-        help_text = "输入\"$角色 {角色名}\"或\"$role {角色名}\"为我设定角色吧，\"$停止扮演 \" 可以清除设定的角色。\n\n目前可用角色列表：\n"
+    def get_help_text(self, verbose=False, **kwargs):
+        help_text = "让机器人扮演不同的角色。\n"
+        if not verbose:
+            return help_text
+        trigger_prefix = conf().get('plugin_trigger_prefix', "$")
+        help_text = f"使用方法:\n{trigger_prefix}角色"+" {预设角色名}: 设定为预设角色。\n"+f"{trigger_prefix}role"+" {预设角色名}: 同上，但使用英文设定。\n"
+        help_text += f"{trigger_prefix}设定扮演"+" {角色设定}: 设定自定义角色人设。\n"
+        help_text += f"{trigger_prefix}停止扮演: 清除设定的角色。\n"
+        help_text += "\n目前可用的预设角色名列表: \n"
         for role in self.roles:
-            help_text += f"[{role}]: {self.roles[role]['remark']}\n"
+            help_text += f"{role}: {self.roles[role]['remark']}\n"
+        help_text += f"\n命令例子: '{trigger_prefix}角色 写作助理'"
         return help_text

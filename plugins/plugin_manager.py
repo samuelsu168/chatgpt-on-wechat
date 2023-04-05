@@ -18,16 +18,18 @@ class PluginManager:
         self.instances = {}
         self.pconf = {}
 
-    def register(self, name: str, desc: str, version: str, author: str, desire_priority: int = 0):
+    def register(self, name: str, desire_priority: int = 0, **kwargs):
         def wrapper(plugincls):
             plugincls.name = name
-            plugincls.desc = desc
-            plugincls.version = version
-            plugincls.author = author
             plugincls.priority = desire_priority
+            plugincls.desc = kwargs.get('desc')
+            plugincls.author = kwargs.get('author')
+            plugincls.version = kwargs.get('version') if kwargs.get('version') != None else "1.0"
+            plugincls.namecn = kwargs.get('namecn') if kwargs.get('namecn') != None else name
+            plugincls.hidden = kwargs.get('hidden') if kwargs.get('hidden') != None else False
             plugincls.enabled = True
             self.plugins[name.upper()] = plugincls
-            logger.info("Plugin %s_v%s registered" % (name, version))
+            logger.info("Plugin %s_v%s registered" % (name, plugincls.version))
             return plugincls
         return wrapper
 
@@ -93,7 +95,12 @@ class PluginManager:
         for name, plugincls in self.plugins.items():
             if plugincls.enabled:
                 if name not in self.instances:
-                    instance = plugincls()
+                    try:
+                        instance = plugincls()
+                    except Exception as e:
+                        logger.warn("Failed to create init %s, diabled. %s" % (name, e))
+                        self.disable_plugin(name)
+                        continue
                     self.instances[name] = instance
                     for event in instance.handlers:
                         if event not in self.listening_plugins:

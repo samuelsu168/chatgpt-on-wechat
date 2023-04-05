@@ -5,7 +5,6 @@ wechaty channel
 Python Wechaty - https://github.com/wechaty/python-wechaty
 """
 import base64
-from concurrent.futures import ThreadPoolExecutor
 import os
 import time
 import asyncio
@@ -18,21 +17,18 @@ from bridge.context import *
 from channel.chat_channel import ChatChannel
 from channel.wechat.wechaty_message import WechatyMessage
 from common.log import logger
+from common.singleton import singleton
 from config import conf
 try:
     from voice.audio_convert import any_to_sil
 except Exception as e:
     pass
 
-thread_pool = ThreadPoolExecutor(max_workers=8)
-def thread_pool_callback(worker):
-    worker_exception = worker.exception()
-    if worker_exception:
-        logger.exception("Worker return exception: {}".format(worker_exception))
+@singleton
 class WechatyChannel(ChatChannel):
 
     def __init__(self):
-        pass
+        super().__init__()
 
     def startup(self):
         config = conf()
@@ -41,6 +37,10 @@ class WechatyChannel(ChatChannel):
         asyncio.run(self.main())
 
     async def main(self):
+        
+        loop = asyncio.get_event_loop()
+        #将asyncio的loop传入处理线程
+        self.handler_pool._initializer= lambda: asyncio.set_event_loop(loop)
         self.bot = Wechaty()
         self.bot.on('login', self.on_login)
         self.bot.on('message', self.on_message)
@@ -73,6 +73,9 @@ class WechatyChannel(ChatChannel):
             file_path = reply.content
             sil_file = os.path.splitext(file_path)[0] + '.sil'
             voiceLength = int(any_to_sil(file_path, sil_file))
+            if voiceLength >= 60000:
+                voiceLength = 60000
+                logger.info('[WX] voice too long, length={}, set to 60s'.format(voiceLength))
             # 发送语音
             t = int(time.time())
             msg = FileBox.from_file(sil_file, name=str(t) + '.sil')
@@ -81,7 +84,8 @@ class WechatyChannel(ChatChannel):
             asyncio.run_coroutine_threadsafe(receiver.say(msg),loop).result()
             try:
                 os.remove(file_path)
-                os.remove(sil_file)
+                if sil_file != file_path:
+                    os.remove(sil_file)
             except Exception as e:
                 pass
             logger.info('[WX] sendVoice={}, receiver={}'.format(reply.content, receiver))
@@ -113,14 +117,9 @@ class WechatyChannel(ChatChannel):
             return
         logger.debug('[WX] message:{}'.format(cmsg))
         room = msg.room()  # 获取消息来自的群聊. 如果消息不是来自群聊, 则返回None
-        
         isgroup = room is not None
         ctype = cmsg.ctype
         context = self._compose_context(ctype, cmsg.content, isgroup=isgroup, msg=cmsg)
         if context:
             logger.info('[WX] receiveMsg={}, context={}'.format(cmsg, context))
-            thread_pool.submit(self._handle_loop, context, asyncio.get_event_loop()).add_done_callback(thread_pool_callback)
-
-    def _handle_loop(self,context,loop):
-        asyncio.set_event_loop(loop)
-        self._handle(context)
+            self.produce(context)

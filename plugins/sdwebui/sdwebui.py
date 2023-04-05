@@ -29,10 +29,12 @@ class SDWebUI(Plugin):
                 self.api = webuiapi.WebUIApi(**self.start_args)
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
             logger.info("[SD] inited")
-        except FileNotFoundError:
-            logger.warn(f"[SD] init failed, {config_path} not found, ignore or see https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins/sdwebui .")
         except Exception as e:
-            logger.warn("[SD] init failed, exception: %s, ignore or see https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins/sdwebui ." % e)
+            if isinstance(e, FileNotFoundError):
+                logger.warn(f"[SD] init failed, {config_path} not found, ignore or see https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins/sdwebui .")
+            else:
+                logger.warn("[SD] init failed, ignore or see https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins/sdwebui .")
+            raise e
     
     def on_handle_context(self, e_context: EventContext):
 
@@ -56,7 +58,7 @@ class SDWebUI(Plugin):
 
             if "help" in keywords or "帮助" in keywords:
                 reply.type = ReplyType.INFO
-                reply.content = self.get_help_text()
+                reply.content = self.get_help_text(verbose = True)
             else:
                 rule_params = {}
                 rule_options = {}
@@ -97,12 +99,16 @@ class SDWebUI(Plugin):
         finally:
             e_context['reply'] = reply
 
-    def get_help_text(self, **kwargs):
+    def get_help_text(self, verbose = False, **kwargs):
         if not conf().get('image_create_prefix'):
             return "画图功能未启用"
         else:
             trigger = conf()['image_create_prefix'][0]
-        help_text = f"请使用<{trigger}[关键词1] [关键词2]...:提示语>的格式作画，如\"{trigger}横版 高清:cat\"\n"
+        help_text = "利用stable-diffusion来画图。\n"
+        if not verbose:
+            return help_text
+        
+        help_text += f"使用方法:\n使用\"{trigger}[关键词1] [关键词2]...:提示语\"的格式作画，如\"{trigger}横版 高清:cat\"\n"
         help_text += "目前可用关键词：\n"
         for rule in self.rules:
             keywords = [f"[{keyword}]" for keyword in rule['keywords']]

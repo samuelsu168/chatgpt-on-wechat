@@ -46,7 +46,8 @@ available_setting = {
     "top_p": 1,
     "frequency_penalty": 0,
     "presence_penalty": 0,
-    "request_timeout": 30,  # chatgpt请求超时时间
+    "request_timeout": 60, # chatgpt请求超时时间，openai接口默认设置为600，对于难问题一般需要较长时间
+    "timeout": 120,         # chatgpt重试超时时间，在这个时间内，将会自动重试
 
     # 语音设置
     "speech_recognition": False,  # 是否开启语音识别
@@ -81,6 +82,7 @@ available_setting = {
 
     # wechatmp的配置
     "wechatmp_token": "",  # 微信公众平台的Token
+    "wechatmp_port": 8080, # 微信公众平台的端口,需要端口转发到80或443
 
     # chatgpt指令自定义触发词
     "clear_memory_commands": ['#清除记忆'],  # 重置会话指令，必须以#开头

@@ -13,7 +13,8 @@ def sigterm_handler_wrap(_signo):
     def func(_signo, _stack_frame):
         logger.info("signal {} received, exiting...".format(_signo))
         conf().save_user_datas()
-        return old_handler(_signo, _stack_frame)
+        if callable(old_handler): #  check old_handler
+            return old_handler(_signo, _stack_frame)
     signal.signal(_signo, func)
 
 def run():
@@ -36,7 +37,7 @@ def run():
             # os.environ['WECHATY_PUPPET_SERVICE_ENDPOINT'] = '127.0.0.1:9001'
 
         channel = channel_factory.create_channel(channel_name)
-        if channel_name in ['wx','wxy','wechatmp','terminal']:
+        if channel_name in ['wx','wxy','terminal','wechatmp','wechatmp_service']:
             PluginManager().load_plugins()
 
         # startup channel
